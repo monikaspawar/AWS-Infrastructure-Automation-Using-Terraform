@@ -13,6 +13,8 @@ terraform apply
 
 ## Architecture
 
+![Infrastructure Architecture](images/Infra.png)
+
 - **VPC**: 10.0.0.0/16 with public/private subnets across 2 AZs
 - **ECS**: Auto-scaling cluster with mixed instance types (t3.medium/small, t2.medium)
 - **RDS**: PostgreSQL db.t3.micro with encryption
