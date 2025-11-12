@@ -24,13 +24,18 @@ This document provides comprehensive documentation for the AWS infrastructure de
 
 ### 3. Compute Layer (ECS)
 - **ECS Cluster**: my-ecs-cluster
-- **Instance Type**: t3.medium (with t3.small and t2.medium alternatives)
+- **Launch Template**: ecs-launch-template
+- **Instance Types**: Mixed instances policy with:
+  - Primary: t3.medium
+  - Alternatives: t3.small, t2.medium
 - **Auto Scaling Group**: 
   - Min: 2 instances
   - Max: 5 instances
   - Desired: 2 instances
-- **AMI**: Amazon ECS-optimized AMI
+  - On-demand instances: 100%
+- **AMI**: Amazon ECS-optimized AMI (amzn2-ami-ecs-hvm-*-x86_64-ebs)
 - **Deployment**: Private subnets only
+- **Network**: No public IP assignment
 
 ### 4. Database Layer (RDS)
 - **Engine**: PostgreSQL
@@ -39,12 +44,23 @@ This document provides comprehensive documentation for the AWS infrastructure de
 - **Multi-AZ**: Disabled (cost optimization)
 - **Backup Retention**: 7 days
 - **Access**: Private subnets only (port 5432)
+- **Database Name**: mydb
+- **Username**: dbadmin
+- **Identifier**: Random suffix for uniqueness
+- **DB Subnet Group**: Spans private subnets
+- **Public Access**: Disabled
+- **Final Snapshot**: Skipped for development
 
 ### 5. Load Balancer (ALB)
+- **Name**: app-lb
 - **Type**: Application Load Balancer
 - **Deployment**: Public subnets
+- **Internal**: False (internet-facing)
 - **Cross-zone load balancing**: Enabled
-- **Target Group**: ECS services (IP-based)
+- **Target Group**: ecs-target-group (IP-based)
+- **Listener**: HTTP on port 80
+- **Default Action**: Fixed response (200 OK)
+- **Deletion Protection**: Disabled
 
 ## Security Configuration
 
@@ -54,17 +70,17 @@ This document provides comprehensive documentation for the AWS infrastructure de
 - **Security groups**: Least privilege access
 
 ### Security Groups
-1. **ECS Security Group**:
-   - Inbound: Port 80 (HTTP) from anywhere
-   - Outbound: All traffic allowed
+1. **ECS Security Group** (ecs-sg):
+   - Inbound: Port 80 (HTTP) from anywhere (0.0.0.0/0)
+   - Outbound: Not explicitly configured (default deny)
 
-2. **RDS Security Group**:
-   - Inbound: Port 5432 (PostgreSQL) from VPC CIDR only
-   - Outbound: Restricted
+2. **RDS Security Group** (rds-sg):
+   - Inbound: Port 5432 (PostgreSQL) from VPC CIDR (10.0.0.0/16) only
+   - Outbound: Not explicitly configured (default deny)
 
-3. **ALB Security Group**:
-   - Inbound: Port 80 (HTTP) from anywhere
-   - Outbound: To ECS instances
+3. **ALB Security Group** (alb-sg):
+   - Inbound: Port 80 (HTTP) from anywhere (0.0.0.0/0)
+   - Outbound: All traffic allowed (0.0.0.0/0)
 
 ### Data Security
 - **RDS Encryption**: Enabled at rest
@@ -88,10 +104,13 @@ aws-infra-terraform/
 ```
 
 ### Key Features
-- **Modular design**: Reusable components
-- **Random naming**: Prevents resource conflicts
+- **Modular design**: Reusable components (vpc, ecs, rds, alb)
+- **Random naming**: RDS resources use random suffixes
 - **Parameterized**: Configurable through variables
 - **State management**: Terraform state tracking
+- **Mixed instance policy**: Cost optimization with multiple instance types
+- **Launch templates**: Modern EC2 instance management
+- **Security group separation**: Dedicated security groups per service
 
 ## Deployment Instructions
 
@@ -128,9 +147,11 @@ A health check script (`health-check.sh`) is included for monitoring deployment 
 
 ### Current Configuration
 - **RDS**: db.t3.micro (lowest cost tier)
-- **ECS**: t3.medium instances (burstable performance)
+- **ECS**: Mixed instances (t3.medium, t3.small, t2.medium) for cost optimization
 - **Single NAT Gateway**: Shared across AZs
 - **No Multi-AZ RDS**: Reduced costs for development
+- **100% On-demand instances**: No spot instances for stability
+- **Skip final snapshot**: Faster teardown for development
 
 ### Recommendations
 - Monitor CloudWatch metrics for right-sizing
