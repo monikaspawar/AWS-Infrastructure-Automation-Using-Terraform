@@ -1,3 +1,5 @@
+
+#ECS optimized ami
 data "aws_ami" "ecs_optimized" {
   most_recent = true
   owners      = ["amazon"]
@@ -8,10 +10,12 @@ data "aws_ami" "ecs_optimized" {
   }
 }
 
+#ecs cluster
 resource "aws_ecs_cluster" "cluster" {
   name = var.ecs_cluster_name
 }
 
+# Launch Template for ECS Instances
 resource "aws_launch_template" "ecs" {
   name = "ecs-launch-template"
   image_id = data.aws_ami.ecs_optimized.id
@@ -30,6 +34,7 @@ resource "aws_launch_template" "ecs" {
   }
 }
 
+# Auto Scaling Group for ECS EC2 Instances
 resource "aws_autoscaling_group" "ecs_asg" {
   desired_capacity    = 2
   max_size            = 5
@@ -58,7 +63,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
     }
   }
 }
-
+#security group
 resource "aws_security_group" "ecs" {
   name_prefix = "ecs-sg"
   vpc_id      = var.vpc_id
@@ -72,3 +77,4 @@ resource "aws_security_group_rule" "ecs_ingress" {
   cidr_blocks = ["0.0.0.0/0"]
   security_group_id = aws_security_group.ecs.id
 }
+

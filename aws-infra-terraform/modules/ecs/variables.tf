@@ -17,3 +17,4 @@ variable "private_subnet_ids" {
   description = "List of private subnet IDs for ECS instances"
   type        = list(string)
 }
+

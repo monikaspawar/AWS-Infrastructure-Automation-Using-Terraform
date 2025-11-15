@@ -22,15 +22,6 @@ resource "aws_security_group_rule" "alb_ingress" {
   security_group_id = aws_security_group.alb.id
 }
 
-resource "aws_security_group_rule" "alb_egress" {
-  type        = "egress"
-  from_port   = 0
-  to_port     = 0
-  protocol    = "-1"
-  cidr_blocks = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.alb.id
-}
-
 resource "aws_lb_target_group" "ecs_target_group" {
   name        = "ecs-target-group"
   port        = 80
@@ -44,11 +35,7 @@ resource "aws_lb_listener" "http" {
   port              = "80"
   protocol          = "HTTP"
   default_action {
-    type             = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      status_code = 200
-      message_body = "OK"
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ecs_target_group.arn
   }
 }
